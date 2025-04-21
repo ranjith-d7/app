@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
+  <style>
+    /* Make map fill the viewport */
+    #map { width:100%; height:90vh; }
+  </style>
+</head>
+<body>
+  <!-- Map container -->
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // 1. Initialize the map centered on your city
+    const map = L.map('map').setView([52.204267, 0.121651], 14);  // Leaflet Quick Start :contentReference[oaicite:2]{index=2}
+
+    // 2. Add the OSM basemap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 3. When the map is clicked, record start/end coords
+    let points = [];
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;  // Getting coords on click :contentReference[oaicite:3]{index=3}
+      points.push([lat, lng]);
+      if (points.length === 2) {
+        // 4. Fetch the route GeoJSON from Flask
+        fetch('/route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: points[0], target: points[1] })
+        })
+        .then(res => res.json())
+        .then(geojson => {
+          // 5. Draw the route as a GeoJSON layer
+          L.geoJSON(geojson).addTo(map);  // GeoJSON via Leaflet :contentReference[oaicite:4]{index=4}
+        });
+        points = [];
+      }
+    });
+  </script>
+</body>
+</html>
+

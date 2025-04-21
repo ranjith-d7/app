@@ -1,0 +1,40 @@
+import osmnx as ox
+import networkx as nx
+
+G = ox.graph_from_place("Cambridge, UK", network_type="drive")
+
+source_x, source_y = 52.204267, 0.121651
+target_x, target_y = 52.205338, 0.121817
+
+source_node = ox.nearest_nodes(G, source_x, source_y)
+target_node = ox.nearest_nodes(G, target_x, target_y)
+
+distance, path = nx.bidirectional_dijkstra(G, source_node, target_node, weight="length")
+
+#create a flask backend
+
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+
+@app.route("/route", methods=["POST"])
+def route():
+    data = request.get_json()
+    src = tuple(data["source"])
+    dst = tuple(data["target"])
+    s_node = ox.get_nearest_node(G, src)
+    t_node = ox.get_nearest_node(G, dst)
+    _, path = nx.bidirectional_dijkstra(G, s_node, t_node, weight="length")
+    route_line = ox.utils_graph.graph_to_gdfs(G.subgraph(path), nodes=False)["geometry"].unary_union
+    return jsonify(ox.geojson_to_gdf(ox.utils_geo.json_to_geojson(route_line)).__geo_interface__)
+
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('index.html')  # Renders templates/index.html :contentReference[oaicite:7]{index=7}
+
+# ... your existing /route POST handler ...
